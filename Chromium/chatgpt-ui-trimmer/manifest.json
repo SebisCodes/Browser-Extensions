@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "ChatGPT UI Trimmer",
+  "version": "1.0.0",
+  "description": "Hide older ChatGPT conversation turns and reduce UI clutter.",
+  "permissions": ["storage", "tabs"],
+  "action": {
+    "default_title": "ChatGPT UI Trimmer",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
