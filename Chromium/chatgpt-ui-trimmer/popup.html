@@ -4,6 +4,7 @@ Purpose:
 - Popup UI for configuring the ChatGPT UI Trimmer extension.
 - Lets the user choose how many recent turns stay visible.
 - Lets the user enable or disable minimal UI mode.
+- Lets the user enable collapsible user messages and collapsible code blocks.
 - Provides buttons to apply trimming, show all turns, and reset defaults.
 
 Inputs:
@@ -84,11 +85,25 @@ AI-Instructions:
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      margin: 10px 0 12px 0;
+      margin: 8px 0;
     }
 
     .checkbox-row input {
       margin: 0;
+      flex: 0 0 auto;
+    }
+
+    .checkbox-row label {
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    .checkbox-group {
+      margin: 10px 0 12px 0;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+      background: color-mix(in srgb, Canvas 94%, CanvasText 6%);
     }
 
     .buttons {
@@ -136,7 +151,7 @@ AI-Instructions:
 </head>
 <body>
   <h1>ChatGPT UI Trimmer</h1>
-  <p class="sub">Hide older messages and simplify the UI slightly.</p>
+  <p class="sub">Hide older messages, simplify the UI, and add collapse toggles.</p>
 
   <div class="field">
     <label for="keepLastN">Visible messages (turns)</label>
@@ -144,9 +159,21 @@ AI-Instructions:
     <div class="hint">1 turn = 1 user or assistant block</div>
   </div>
 
-  <div class="checkbox-row">
-    <input id="minimalUi" type="checkbox" />
-    <label for="minimalUi" style="margin: 0;">Simplify UI (sidebar + header buttons)</label>
+  <div class="checkbox-group">
+    <div class="checkbox-row">
+      <input id="minimalUi" type="checkbox" />
+      <label for="minimalUi">Simplify UI (sidebar + header buttons)</label>
+    </div>
+
+    <div class="checkbox-row">
+      <input id="collapseOwnMessages" type="checkbox" />
+      <label for="collapseOwnMessages">Collapse my messages</label>
+    </div>
+
+    <div class="checkbox-row">
+      <input id="collapseCodeBlocks" type="checkbox" />
+      <label for="collapseCodeBlocks">Collapse code blocks</label>
+    </div>
   </div>
 
   <div class="buttons">

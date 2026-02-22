@@ -4,9 +4,14 @@ Purpose:
 - Controls the popup UI for the ChatGPT UI Trimmer extension.
 - Loads and saves user settings from chrome.storage.sync.
 - Sends commands to the content script in the active tab.
+- Exposes checkboxes for collapsible user messages and collapsible code blocks.
 
 Inputs:
-- Popup form values (keepLastN, minimalUi)
+- Popup form values:
+  - keepLastN
+  - minimalUi
+  - collapseOwnMessages
+  - collapseCodeBlocks
 
 Outputs:
 - Messages to content.js
@@ -35,19 +40,28 @@ AI-Instructions:
 
 const DEFAULT_SETTINGS = Object.freeze({
   keepLastN: 6,
-  minimalUi: true
+  minimalUi: true,
+  collapseOwnMessages: true,
+  collapseCodeBlocks: true
+});
+
+const LIMITS = Object.freeze({
+  minKeepLastN: 1,
+  maxKeepLastN: 500
 });
 
 /**
  * Promise wrapper for chrome.storage.sync.get.
- * @returns {Promise<{keepLastN:number, minimalUi:boolean}>}
+ * @returns {Promise<{keepLastN:number, minimalUi:boolean, collapseOwnMessages:boolean, collapseCodeBlocks:boolean}>}
  */
 function loadSettings() {
   return new Promise((resolve) => {
     chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
       resolve({
         keepLastN: clampKeepLastN(result.keepLastN),
-        minimalUi: Boolean(result.minimalUi)
+        minimalUi: Boolean(result.minimalUi),
+        collapseOwnMessages: Boolean(result.collapseOwnMessages),
+        collapseCodeBlocks: Boolean(result.collapseCodeBlocks)
       });
     });
   });
@@ -91,11 +105,10 @@ async function sendMessageToActiveTab(message) {
   return new Promise((resolve, reject) => {
     chrome.tabs.sendMessage(tab.id, message, (response) => {
       const lastError = chrome.runtime.lastError;
+
       if (lastError) {
         reject(
-          new Error(
-            "Content script is not reachable. Open a ChatGPT tab and reload the page."
-          )
+          new Error("Content script is not reachable. Open a ChatGPT tab and reload the page.")
         );
         return;
       }
@@ -117,7 +130,7 @@ function clampKeepLastN(value) {
     return DEFAULT_SETTINGS.keepLastN;
   }
 
-  return Math.min(500, Math.max(1, parsed));
+  return Math.min(LIMITS.maxKeepLastN, Math.max(LIMITS.minKeepLastN, parsed));
 }
 
 /**
@@ -137,28 +150,36 @@ function setStatus(text, isError = false) {
 
 /**
  * Reads form values from the popup.
- * @returns {{keepLastN:number, minimalUi:boolean}}
+ * @returns {{keepLastN:number, minimalUi:boolean, collapseOwnMessages:boolean, collapseCodeBlocks:boolean}}
  */
 function readForm() {
   const keepLastNInput = /** @type {HTMLInputElement} */ (document.getElementById("keepLastN"));
   const minimalUiInput = /** @type {HTMLInputElement} */ (document.getElementById("minimalUi"));
+  const collapseOwnMessagesInput = /** @type {HTMLInputElement} */ (document.getElementById("collapseOwnMessages"));
+  const collapseCodeBlocksInput = /** @type {HTMLInputElement} */ (document.getElementById("collapseCodeBlocks"));
 
   return {
     keepLastN: clampKeepLastN(keepLastNInput.value),
-    minimalUi: Boolean(minimalUiInput.checked)
+    minimalUi: Boolean(minimalUiInput.checked),
+    collapseOwnMessages: Boolean(collapseOwnMessagesInput.checked),
+    collapseCodeBlocks: Boolean(collapseCodeBlocksInput.checked)
   };
 }
 
 /**
  * Writes values into the popup form.
- * @param {{keepLastN:number, minimalUi:boolean}} settings
+ * @param {{keepLastN:number, minimalUi:boolean, collapseOwnMessages:boolean, collapseCodeBlocks:boolean}} settings
  */
 function writeForm(settings) {
   const keepLastNInput = /** @type {HTMLInputElement} */ (document.getElementById("keepLastN"));
   const minimalUiInput = /** @type {HTMLInputElement} */ (document.getElementById("minimalUi"));
+  const collapseOwnMessagesInput = /** @type {HTMLInputElement} */ (document.getElementById("collapseOwnMessages"));
+  const collapseCodeBlocksInput = /** @type {HTMLInputElement} */ (document.getElementById("collapseCodeBlocks"));
 
   keepLastNInput.value = String(clampKeepLastN(settings.keepLastN));
   minimalUiInput.checked = Boolean(settings.minimalUi);
+  collapseOwnMessagesInput.checked = Boolean(settings.collapseOwnMessages);
+  collapseCodeBlocksInput.checked = Boolean(settings.collapseCodeBlocks);
 }
 
 /**
@@ -172,7 +193,9 @@ async function applyNow() {
   const response = await sendMessageToActiveTab({
     type: "TRIMMER_APPLY",
     keepLastN: settings.keepLastN,
-    minimalUi: settings.minimalUi
+    minimalUi: settings.minimalUi,
+    collapseOwnMessages: settings.collapseOwnMessages,
+    collapseCodeBlocks: settings.collapseCodeBlocks
   });
 
   if (!response || response.ok !== true) {
